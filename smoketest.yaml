@@ -1,0 +1,47 @@
+parameters:
+  - name: serviceconnection
+    type: string
+    default: branon
+
+stages:
+  - stage: Bicep_Build
+    displayName: Test Bicep Build
+    pool:
+      vmAgentImage: "ubuntu-latest"
+    jobs:
+      - job: TestBicepBuild
+        steps:
+          - pwsh: |
+              curl -Lo bicep "https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64"
+              chmod +x ./bicep
+              sudo mv ./bicep /usr/local/bin/bicep
+              bicep -v
+            displayName: "Install Bicep"
+          - task: AzurePowerShell@5
+            displayName: "Testing Bicep Anonymous Build PowerShell"
+            name: build_template
+            inputs:
+              azureSubscription: ${{parameters.serviceconnection}}
+              ScriptType: InlineScript
+              Inline: |
+                $PSVersionTable
+                Get-module Az.* -ListAvailable
+                $env:BICEP_REGISTRY_ENABLED_EXPERIMENTAL = $true
+                "Experimental feature is: {0}" -f $env:BICEP_REGISTRY_ENABLED_EXPERIMENTAL
+                ls /home/
+                bicep build main.bicep
+              azurePowerShellVersion: "latestVersion"
+              pwsh: true
+
+          - task: AzureCLI@2
+            displayName: "Testing Bicep Anonymous Build Azure CLI"
+            inputs:
+              azureSubscription: ${{parameters.serviceconnection}}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az --version
+                az account show
+                az bicep install
+                az bicep version
+                az bicep build --file main.bicep

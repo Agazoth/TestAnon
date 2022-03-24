@@ -1,0 +1,19 @@
+{
+  "cloud": {
+    "currentProfile": "AzureCloud",
+    "credentialPrecedence": [
+      "AzureCLI",
+      "AzurePowerShell"
+    ]
+  },
+  "moduleAliases": {
+    "ts": {},
+    "br": {
+      "atea": {
+        "registry": "ateabicepcr.azurecr.io",
+        "modulePath": "p"
+      }
+    }
+  },
+  "analyzers": {}
+}

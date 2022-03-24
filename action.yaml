@@ -1,0 +1,43 @@
+parameters:
+  - name: serviceconnection
+    type: string
+    default: AzureSponsorship
+
+stages:
+  - stage: Bicep_Build
+    displayName: Test Bicep Build
+    pool:
+      vmAgentImage: "ubuntu-latest"
+    jobs:
+      - job: TestBicepBuild
+        steps:
+          - pwsh: |
+              curl -Lo bicep "https://storateamsppublic.blob.core.windows.net/templates/bicep/0.4.1310/bicep"
+              chmod +x ./bicep
+              sudo mv ./bicep /usr/local/bin/bicep
+              bicep -v
+            displayName: "Install Bicep"
+          - task: AzurePowerShell@5
+            displayName: "Testing Bicep Anonymous Build"
+            name: build_template
+            inputs:
+              azureSubscription: ${{parameters.serviceconnection}}
+              ScriptType: InlineScript
+              Inline: |
+                $env:BICEP_REGISTRY_ENABLED_EXPERIMENTAL = $true
+                "Experimental feature is: {0}" -f $env:BICEP_REGISTRY_ENABLED_EXPERIMENTAL
+                Write-output 'Before'
+                Get-Location
+                ls
+                bicep build main.bicep
+                Write-output 'After'
+                ls
+                Write-output 'Builded JSON file:'
+                Get-Content -LiteralPath 'main.json' -Raw
+              azurePowerShellVersion: "latestVersion"
+              pwsh: true
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.SourcesDirectory)'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'            
